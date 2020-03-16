@@ -4,7 +4,7 @@
 <!--                                               -->
 <!--   Discrete Mathematics: an Open Introduction  -->
 <!--                                               -->
-<!-- Copyright (C) 2015-2016 Oscar Levin           -->
+<!-- Copyright (C) 2015-2018 Oscar Levin           -->
 <!-- See the file COPYING for copying conditions.  -->
 
 <!-- Parts of this file were adapted from the author guide at https://github.com/rbeezer/mathbook and the analagous file at https://github.com/twjudson/aata -->
@@ -39,36 +39,51 @@
 <!-- the *visibility* of these four parts                  -->
 <!--                                                       -->
 <!-- Parameters are:                                       -->
-<!--   'yes' - immediately visible                         -->
-<!--   'knowl' - adjacent, but requires action to reveal   -->
-<!--    NB: HTML - 'knowl' not implemented or recognized   -->
-<!--       'yes' makes knowls for hints, etc *always*      -->
-<!--   'no' - not visible at all                           -->
+<!--   'yes' - visible                                     -->
+<!--   'no' - not visible                                  -->
 <!--                                                       -->
-<!-- First, an exercise in exercises section.              -->
+<!-- Five categories:                                      -->
+<!--   inline (checpoint) exercises                        -->
+<!--   divisional (inside an "exercises" division)         -->
+<!--   worksheet (inside a "worksheet" division)           -->
+<!--   reading (inside a "reading-questions" division)     -->
+<!--   project (on a project-like,                         -->
+<!--   or possibly on a terminal "task" of a project-like) -->
+<!--                                                       -->
 <!-- Default is "yes" for every part, so experiment        -->
 <!-- with parameters to make some parts hidden.            -->
-<xsl:param name="exercise.text.statement" select="'yes'" />
-<xsl:param name="exercise.text.hint" select="'no'" />
-<xsl:param name="exercise.text.answer" select="'no'" />
-<xsl:param name="exercise.text.solution" select="'no'" />
-<!-- Second, an exercise in a solutions list in backmatter.-->
-<xsl:param name="exercise.backmatter.statement" select="'no'" />
-<xsl:param name="exercise.backmatter.hint" select="'yes'" />
-<xsl:param name="exercise.backmatter.answer" select="'yes'" />
-<xsl:param name="exercise.backmatter.solution" select="'yes'" />
+<!--                                                       -->
+<!-- These are global switches, so only need to be fed     -->
+<!-- into the construction of exercises via the            -->
+<!-- "exercise-components" template.                       -->
+<!-- N.B. "statement" switches are necessary or desirable  -->
+<!-- for alternate collections of solutions (only)         -->
+<xsl:param name="exercise.inline.statement" select="''" />
+<xsl:param name="exercise.inline.hint" select="''" />
+<xsl:param name="exercise.inline.answer" select="''" />
+<xsl:param name="exercise.inline.solution" select="''" />
+<xsl:param name="exercise.divisional.statement" select="''" />
+<xsl:param name="exercise.divisional.hint" select="'no'" />
+<xsl:param name="exercise.divisional.answer" select="'no'" />
+<xsl:param name="exercise.divisional.solution" select="'no'" />
+<xsl:param name="exercise.worksheet.statement" select="''" />
+<xsl:param name="exercise.worksheet.hint" select="''" />
+<xsl:param name="exercise.worksheet.answer" select="''" />
+<xsl:param name="exercise.worksheet.solution" select="''" />
+<xsl:param name="exercise.reading.statement" select="''" />
+<xsl:param name="exercise.reading.hint" select="''" />
+<xsl:param name="exercise.reading.answer" select="''" />
+<xsl:param name="exercise.reading.solution" select="''" />
+<xsl:param name="project.statement" select="''" />
+<xsl:param name="project.hint" select="''" />
+<xsl:param name="project.answer" select="''" />
+<xsl:param name="project.solution" select="''" />
 <!-- Author tools are for drafts, mostly "todo" items                 -->
 <!-- and "provisional" citations and cross-references                 -->
 <!-- Default is to hide todo's, inline provisionals                   -->
 <!-- Otherwise ('yes'), todo's in red paragraphs, provisionals in red -->
-<xsl:param name="author-tools" select="'no'" />
-<!-- Cross-references like Section 5.2, Theorem 6.7.89    -->
-<!-- "know" what they point to, so we can get the "name"  -->
-<!-- part automatically (and have it change with editing) -->
-<!-- This switch is global, override with @autoname='no'  -->
-<!-- on an <xref> where it is unjustified or a problem    -->
-<!-- Default is to have this feature off                  -->
-<xsl:param name="autoname" select="'yes'" />
+<xsl:param name="author.tools" select="'no'" />
+
 <!-- How many levels to table of contents  -->
 <!-- Not peculiar to HTML or LaTeX or etc. -->
 <!-- Sentinel indicates no choice made     -->
@@ -80,7 +95,7 @@
 <xsl:param name="numbering.theorems.level" select="'2'" />
 <!-- How many levels in numbering of projects, etc     -->
 <!-- PROJECT-LIKE gets independent numbering -->
-<xsl:param name="numbering.projects.level" select="'0'" />
+<xsl:param name="numbering.projects.level" select="'1'" />
 <!-- How many levels in numbering of equations     -->
 <!-- Analagous to numbering theorems, but distinct -->
 <xsl:param name="numbering.equations.level" select="'1'" />
@@ -101,15 +116,29 @@
 <xsl:param name="address.html" select="''" />
 <xsl:param name="address.pdf" select="''" />
 
+<!-- To start chapters at 0 (might change later)-->
+<xsl:param name="debug.chapter.start" select="'0'" />
 
+<!-- Forward links to solutions -->
+<!-- very temporary, just for testing -->
+<!-- <xsl:param name="debug.exercises.forward" select="'yes'"/> -->
+
+
+<!-- WeBWorK -->
+<!-- There is no default server provided         -->
+<!-- Interactions are with an "anonymous" course -->
+<xsl:param name="webwork.server" select="'https://webwork-dev.aimath.org'"/>
+<xsl:param name="webwork.course" select="'anonymous'" />
+<xsl:param name="webwork.userID" select="'anonymous'" />
+<xsl:param name="webwork.password" select="'anonymous'" />
 
 <!-- Redefine chapter numbering to start at 0 -->
-<xsl:template match="chapter" mode="division-serial-number">
+<!-- <xsl:template match="chapter" mode="division-serial-number"> -->
     <!-- chapters, in parts or not, do not have "references" -->
     <!-- or "exercises" divisions as peers, so we just count -->
     <!-- chapters, varying the subtree considered depending  -->
     <!-- on the style elected for how parts are numbered     -->
-    <xsl:variable name="n">
+    <!-- <xsl:variable name="n">
       <xsl:choose>
         <xsl:when test="($parts = 'absent') or ($parts = 'decorative')">
             <xsl:number from="book" level="any" count="chapter" format="1" />
@@ -120,7 +149,7 @@
       </xsl:choose>
     </xsl:variable>
     <xsl:number value="$n - 1" format="1" />
-</xsl:template>
+</xsl:template> -->
 
 
 
@@ -149,5 +178,23 @@
     <xsl:number />
 </xsl:template> -->
 
+<!-- Hack (12/21/18): make all exercises unstructured? -->
+<!-- There are two models for most of the divisions (part -->
+<!-- through subsubsection, plus appendix).  One has      -->
+<!-- subdivisions, and possibly multiple "exercises", or  -->
+<!-- other specialized subdivisions.  The other has no    -->
+<!-- subdivisions, and then at most one of each type of   -->
+<!-- specialized subdivision, which inherit numbers from  -->
+<!-- their parent division. This is the test, which is    -->
+<!-- very similar to "is-leaf" above.                     -->
+<!--                                                      -->
+<!-- A "part" must have chapters, so will always return   -->
+<!-- 'true' and for a 'subsubsection' there are no more   -->
+<!-- subdivisions to employ and so will return empty.     -->
+<xsl:template match="book|article|part|chapter|appendix|section|subsection|subsubsection" mode="is-structured-division">
+    <xsl:if test="chapter|section|subsection|subsubsection">
+        <xsl:text></xsl:text> <!-- removed "true", so now this should make all exercises think they are part of unstructured divisions -->
+    </xsl:if>
+  </xsl:template>
 
 </xsl:stylesheet>

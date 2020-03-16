@@ -5,19 +5,22 @@
 <!--                                               -->
 <!--   Discrete Mathematics: an Open Introduction  -->
 <!--                                               -->
-<!-- Copyright (C) 2015-2016 Oscar Levin           -->
+<!-- Copyright (C) 2015-2018 Oscar Levin           -->
 <!-- See the file COPYING for copying conditions.  -->
 
 <!-- Parts of this file were adapted from the author guide at https://github.com/rbeezer/mathbook and the analagous file at https://github.com/twjudson/aata -->
-
+<!DOCTYPE xsl:stylesheet [
+    <!ENTITY % entities SYSTEM "../xsl/entities.ent">
+    %entities;
+]>
 
 <!-- DMOI customizations for HTML runs -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
-<!-- Assumes current file is in discrete-text/xsl and that the mathbook repository is adjacent -->
-<xsl:import href="../../mathbook/xsl/mathbook-html.xsl" />
-<!-- Assumes next file can be found in discrete-text/xsl -->
+<!-- Assumes current file is in mathbook/user -->
+<xsl:import href="../xsl/mathbook-html.xsl" />
+<!-- Assumes next file can be found in mathbook/user-->
 <xsl:import href="dmoi-common.xsl" />
 
 <!-- List Chapters and Sections in sidebar Table of Contents -->
@@ -25,8 +28,41 @@
 
 
 <!-- Exercises -->
+<xsl:param name="exercise.inline.hint" select="'yes'" />
+<xsl:param name="exercise.inline.answer" select="'yes'" />
+<xsl:param name="exercise.inline.solution" select="'yes'" />
+<xsl:param name="exercise.divisional.hint" select="'yes'" />
+<xsl:param name="exercise.divisional.answer" select="'yes'" />
+<xsl:param name="exercise.divisional.solution" select="'yes'" />
+<xsl:param name="project.hint" select="'yes'" />
+<xsl:param name="project.answer" select="'yes'" />
+<xsl:param name="project.solution" select="'yes'" />
+
+<!-- WeBWorK exercise may be rendered static="yes"    -->
+<!-- TODO: implement middle option static="preview"   -->
+<!-- Or static="no" makes an interactive problem      -->
+<!-- Also in play here are params from -common:       -->
+<!-- exercise.text.statement, exercise.text.hint, exercise.text.solution -->
+<!-- For a divisional exercise, when static="no", that is an intentional -->
+<!-- decision to show the live problem, which means the statement will   -->
+<!-- be shown, regardless of exercise.text.statement. If the problem was -->
+<!-- authored in PTX source, we can respect the values for               -->
+<!-- exercise.text.hint and exercise.text.solution. If the problem       -->
+<!-- source is on the webwork server, then hints and solutions will show -->
+<!-- no matter what.                                                     -->
+<!-- For a divisional exercise, when static="yes", each of the three     -->
+<!-- -common params will be respected. Effectively the content is        -->
+<!-- handled like a non-webwork exercise.                                -->
+<!-- For an inline exercise (webwork or otherwise) statements, hints,    -->
+<!-- and solutions are always shown. The -common params mentioned above  -->
+<!-- do not apply. Whether static is "yes" or "no" doesn't matter.       -->
+<xsl:param name="webwork.inline.static" select="'no'" />
+<xsl:param name="webwork.divisional.static" select="'no'" />
+
+
+
 <!-- HTML: knowlize as available/appropriate -->
-<xsl:param name="exercise.text.statement" select="'yes'" />
+<!-- <xsl:param name="exercise.text.statement" select="'yes'" />
 <xsl:param name="exercise.text.hint" select="'yes'" />
 <xsl:param name="exercise.text.answer" select="'yes'" />
 <xsl:param name="exercise.text.solution" select="'yes'" />
@@ -34,6 +70,8 @@
 <xsl:param name="exercise.backmatter.hint" select="'no'" />
 <xsl:param name="exercise.backmatter.answer" select="'yes'" />
 <xsl:param name="exercise.backmatter.solution" select="'yes'" />
+<xsl:param name="webwork.inline.static" select="'no'" />
+<xsl:param name="webwork.divisional.static" select="'no'" /> -->
 
 
 <!-- Changes to mimic in HTML via CSS/other changes? -->
@@ -42,6 +80,14 @@
 <!-- LaTeX: Historical Notes -->
 
 
+<!-- ID settings for various services -->
+<!-- These are publisher items that may vary for a fork,     -->
+<!-- and which should not be a concern while editing, and    -->
+<!-- which should not run with source.  Deprecated "docinfo" -->
+<!-- options are respected for now.                          -->
+<xsl:param name="html.google-classic" select="''"/>
+<xsl:param name="html.google-universal" select="'UA-66485406-1'"/>
+<xsl:param name="html.google-search" select="'000445521324161818100:qhc2ahxtur8'"/>
 
 
 <!-- Here are the options, taken from mathbook-html.xsl, changed as needed -->
@@ -80,25 +126,17 @@
 <xsl:param name="html.knowl.figure" select="'no'" />
 <xsl:param name="html.knowl.table" select="'no'" />
 <xsl:param name="html.knowl.listing" select="'no'" />
-<xsl:param name="html.knowl.sidebyside" select="'no'" />
+<xsl:param name="html.knowl.webwork.inline" select="'no'" />
+<xsl:param name="html.knowl.webwork.sectional" select="'no'" />
 <xsl:param name="html.knowl.exercise.inline" select="'no'" />
 <xsl:param name="html.knowl.exercise.sectional" select="'no'" />
 <!-- html.knowl.example.solution: always "yes", could be implemented -->
 
 <!-- CSS and Javascript Servers -->
-<!-- We allow processing paramteers to specify new servers   -->
-<!-- or to specify the particular CSS file, which may have   -->
-<!-- different color schemes.  The defaults should work      -->
-<!-- fine and will not need changes on initial or casual use -->
-<!-- #0 to #5 on mathbook-modern for different color schemes -->
-<!-- We just like #3 as the default                          -->
-<!-- N.B.:  This scheme is transitional and may change             -->
-<!-- N.B.:  without warning and without any deprecation indicators -->
-<xsl:param name="html.js.server"  select="'https://aimath.org'" />
-<xsl:param name="html.css.server" select="'https://aimath.org'" />
-<xsl:param name="html.css.file"   select="'mathbook-4.css'" />
+<xsl:param name="html.css.colorfile" select="''" />
+<xsl:param name="debug.colorgs" select="'blue_grey'" />
 <!-- A space-separated list of CSS URLs (points to servers or local files) -->
-<xsl:param name="html.css.extra"  select="'custom-styles.css title-period-fix.css'" />
+<xsl:param name="html.css.extra"  select="'custom-styles.css'" />
 
 <!-- Navigation -->
 <!-- Navigation may follow two different logical models:                     -->
@@ -118,10 +156,10 @@
 <!-- WeBWorK -->
 <!-- There is no default server provided         -->
 <!-- Interactions are with an "anonymous" course -->
-<xsl:param name="webwork.server" select="''"/>
+<!-- <xsl:param name="webwork.server" select="'https://webwork.pcc.edu'"/>
 <xsl:param name="webwork.course" select="'anonymous'" />
 <xsl:param name="webwork.userID" select="'anonymous'" />
-<xsl:param name="webwork.password" select="'anonymous'" />
+<xsl:param name="webwork.password" select="'anonymous'" /> -->
 
 <!-- Permalinks -->
 <!-- Next to subdivision headings a "paragraph" symbol     -->
@@ -205,20 +243,63 @@
 </xsl:template>
 
 <!-- HTML, CSS -->
-<xsl:template match="exercise" mode="environment-element">
+<!-- <xsl:template match="exercise" mode="environment-element">
     <xsl:text>article</xsl:text>
 </xsl:template>
 <xsl:template match="exercise" mode="environment-class">
     <xsl:text>exercise-like</xsl:text>
+</xsl:template> -->
+
+<!-- HACK 5/29/19: Remove codenumber and period from projects (Investigate!) -->
+<!-- h6, type name, number (if exists), title (if exists) -->
+<!-- REMARK-LIKE, COMPUTATION-LIKE, DEFINITION-LIKE, SOLUTION-LIKE, objectives (xref-content), outcomes (xref-content), EXAMPLE-LIKE, PROJECT-LIKE, exercise (inline), task (xref-content), fn (xref-content), biblio/note (xref-content)-->
+<!-- E.g. Corollary 4.1 (Leibniz, Newton).  The fundamental theorem of calculus. -->
+<xsl:template match="&PROJECT-LIKE;" mode="heading-full">
+    <h6 class="heading">
+        <span class="type">
+            <xsl:apply-templates select="." mode="type-name"/>
+        </span>
+        <!--  -->
+        <xsl:variable name="the-number">
+            <xsl:apply-templates select="." mode="number" />
+        </xsl:variable>
+        <xsl:if test="not($the-number='')">
+            <xsl:text> </xsl:text>
+            <!-- <span class="codenumber">
+                <xsl:value-of select="$the-number"/>
+            </span> REMOVED -->
+        </xsl:if>
+        <!--  -->
+        <xsl:if test="creator and (&THEOREM-FILTER; or &AXIOM-FILTER;)">
+            <xsl:text> </xsl:text>
+            <span class="creator">
+                <xsl:text>(</xsl:text>
+                <xsl:apply-templates select="." mode="creator-full"/>
+                <xsl:text>)</xsl:text>
+            </span>
+        </xsl:if>
+        <!-- A period now, no matter which of 4 combinations we have above-->
+        <!-- <xsl:text>.</xsl:text> REMOVED -->
+        <!-- A title carries its own punctuation -->
+        <xsl:if test="title">
+            <xsl:text> </xsl:text>
+            <span class="title">
+                <xsl:apply-templates select="." mode="title-full"/>
+            </span>
+        </xsl:if>
+    </h6>
 </xsl:template>
 
-
+<!-- And its CSS class -->
+<xsl:template match="&PROJECT-LIKE;" mode="body-css-class">
+    <xsl:text>project-like</xsl:text>
+</xsl:template>
 
 <!-- Analytics Footers -->
 
 <!-- Google Analytics                     -->
 <!-- "Classic", not compared to Universal -->
-<xsl:template match="google">
+<!-- <xsl:template match="google">
 <xsl:comment>Start: Google code</xsl:comment>
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -231,7 +312,7 @@
 
 </script>
 <xsl:comment>End: Google code</xsl:comment>
-</xsl:template>
+</xsl:template> -->
 
 
 
